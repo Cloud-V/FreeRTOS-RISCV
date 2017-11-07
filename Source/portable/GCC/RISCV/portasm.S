@@ -81,8 +81,12 @@
 # define REGBYTES 4
 #endif
 
+#define EPC 65 // program counter used to store pc during interrupt occurs
+#define UIE 0x4 // controls registers responsible for interrupt enable/disable
+
 /* Enable interrupts when returning from the handler */
 #define MSTATUS_PRV1 0x1880
+#define UIE_ENABLE_ALL 0xFFFF // enables possible interrupts
 
 .global portSAVE_CONTEXT
 .global portRESTORE_CONTEXT
@@ -140,7 +144,9 @@
 
 /* Saves current error program counter (EPC) as task program counter */
 .macro portSAVE_EPC
-  	csrr	t0, mepc
+  	csrrw	t0, EPC, zero // we override it and restore it since
+	csrrw	zero, EPC, t0 // dwarf32 doesn't support 
+							//other control instructions such as csrrc or csrrs
 	STORE	t0, 31 * REGBYTES(sp)
 	.endm
 
@@ -159,11 +165,13 @@
 
 	/* Load task program counter */
 	LOAD	t0, 31 * REGBYTES(sp)
-  	csrw	mepc, t0
+  	csrrw	zero ,EPC, t0 // load new epc
 
-	/* Run in machine mode */
-  	li 		t0, MSTATUS_PRV1
-  	csrs	mstatus, t0
+//	/* Run in machine mode */
+//  	li 		t0, MSTATUS_PRV1
+//  	csrs	mstatus, t0
+	li t0, UIE_ENABLE_ALL
+	csrrw x0, UIE, t0
 
 	/* Restore registers,
 	   Skip global pointer because that does not change */
@@ -198,7 +206,7 @@
 	LOAD	x31, 30 * REGBYTES(sp)
 
 	addi	sp, sp, REGBYTES * 32
-	mret
+	uret
 	.endm
 
 /* Macro for restoring task context */
@@ -297,7 +305,12 @@ vPortYield:
 	*  The write to mstatus in the restore context routine will enable interrupts after the
 	*  mret. A more fine-grain lock may be possible.
 	*/  
-	csrci mstatus, 8
+	/** this my be problematic
+		ideally, we would set  global interrupts to 0
+		but we dont have anything other than csrrw, so we override everything
+		and then enable it again later
+	**/
+	csrrw x0, UIE, x0  
 
 	portSAVE_CONTEXT
 	portSAVE_RA
