@@ -78,7 +78,6 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "portmacro.h"
-#include "configstring.h"
 
 
 /* A variable is used to keep track of the critical section nesting.  This
@@ -93,13 +92,7 @@ static UBaseType_t uxCriticalNesting = 0xaaaaaaaa;
 BaseType_t xStartContext[31] = {0};
 #endif
 
-volatile uint64_t* mtime;
-volatile uint64_t* timecmp;
-
-void parse_config_string(void);
-static void query_rtc(const char* config_string);
-
-
+volatile unsigned int timerInterruptFrequency = 100000;
 /*
  * Handler for timer interrupt
  */
@@ -132,21 +125,34 @@ static void prvTaskExitError( void );
  */
 static void prvSetNextTimerInterrupt(void)
 {
-    if (mtime && timecmp) 
-        *timecmp = *mtime + (configTICK_CLOCK_HZ / configTICK_RATE_HZ);
+    // save temporary register
+    asm volatile("sw t0, -4(sp)");
+    
+    asm volatile("li t0, %0"
+        :"r"(timerInterruptFrequency));
+    asm volatile("csrrw x0, 0xc01, t0");
+
+    // load temporary register
+    asm volatile("lw t0, -4(sp)");
 }
 /*-----------------------------------------------------------*/
 
 /* Sets and enable the timer interrupt */
 void vPortSetupTimer(void)
 {
-    parse_config_string();
 
     /* reuse existing routine */
     prvSetNextTimerInterrupt();
 
 	/* Enable timer interupt */
-	__asm volatile("csrs mie,%0"::"r"(0x80));
+	// __asm volatile("csrs mie,%0"::"r"(0x80));
+    asm volatile("sw t0, -4(sp)");
+
+    asm volatile("csrrw t0, 0x4, x0");
+    asm volatile("ori t0, t0, 0x2"); // the second bit is responsible for 
+    asm volatile("csrrw x0, 0x4, t0"); // enabling the timer
+
+    asm volatile("lw t0, -4(sp)");
 }
 /*-----------------------------------------------------------*/
 
@@ -167,7 +173,7 @@ void prvTaskExitError( void )
 /* Clear current interrupt mask and set given mask */
 void vPortClearInterruptMask(int mask)
 {
-	__asm volatile("csrw mie, %0"::"r"(mask));
+	asm volatile("csrw mie, %0"::"r"(mask));
 }
 /*-----------------------------------------------------------*/
 
@@ -175,8 +181,8 @@ void vPortClearInterruptMask(int mask)
 int vPortSetInterruptMask(void)
 {
 	int ret;
-	__asm volatile("csrr %0,mie":"=r"(ret));
-	__asm volatile("csrc mie,%0"::"i"(7));
+	asm volatile("csrr %0,mie":"=r"(ret));
+	asm volatile("csrc mie,%0"::"i"(7));
 	return ret;
 }
 /*-----------------------------------------------------------*/
@@ -187,7 +193,7 @@ int vPortSetInterruptMask(void)
  */
 StackType_t *pxPortInitialiseStack( StackType_t *pxTopOfStack, TaskFunction_t pxCode, void *pvParameters )
 {
-	/* Simulate the stack frame as it would be created by a context switch
+	/*Simulate the stack frame as it would be created by a context switch
 	interrupt. */
 	register int *tp asm("x3");
 	pxTopOfStack--;
@@ -212,27 +218,4 @@ void vPortSysTickHandler( void )
 	{
 		vTaskSwitchContext();
 	}
-}
-/*-----------------------------------------------------------*/
-
-static void query_rtc(const char* config_string)
-{
-  query_result res = query_config_string(config_string, "rtc{addr");
-  assert(res.start);
-  mtime = (void*)(uintptr_t)get_uint(res);
-}
-
-static void query_timecmp(const char* config_string)
-{
-    query_result res = query_config_string(config_string, "core{0{0{timecmp");
-    assert(res.start);
-    timecmp = (void*)(uintptr_t)get_uint(res);
-}
-
-void parse_config_string()
-{
-  uint32_t addr = *(uint32_t*)CONFIG_STRING_ADDR;
-  const char* s = (const char*)(uintptr_t)addr;
-  query_rtc(s);
-  query_timecmp(s);
 }
