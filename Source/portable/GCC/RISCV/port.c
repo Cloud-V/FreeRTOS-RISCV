@@ -144,13 +144,16 @@ void vPortSetupTimer(void)
     /* reuse existing routine */
     prvSetNextTimerInterrupt();
 
-	/* Enable timer interupt */
-	// __asm volatile("csrs mie,%0"::"r"(0x80));
-    asm volatile("sw t0, -4(sp)");
+	/* store t0 register */
+	asm volatile("sw t0, -4(sp)");
 
+    /* 
+       the second bit is responsible for 
+       enabling the timer
+    */
     asm volatile("csrrw t0, 0x4, x0");
-    asm volatile("ori t0, t0, 0x2"); // the second bit is responsible for 
-    asm volatile("csrrw x0, 0x4, t0"); // enabling the timer
+    asm volatile("ori t0, t0, 0x2");
+    asm volatile("csrrw x0, 0x4, t0");
 
     asm volatile("lw t0, -4(sp)");
 }
@@ -173,7 +176,7 @@ void prvTaskExitError( void )
 /* Clear current interrupt mask and set given mask */
 void vPortClearInterruptMask(int mask)
 {
-	asm volatile("csrw mie, %0"::"r"(mask));
+	asm volatile("csrrw x0, uie, %0"::"r"(mask)); // restoring timer interrupt
 }
 /*-----------------------------------------------------------*/
 
@@ -181,8 +184,7 @@ void vPortClearInterruptMask(int mask)
 int vPortSetInterruptMask(void)
 {
 	int ret;
-	asm volatile("csrr %0,mie":"=r"(ret));
-	asm volatile("csrc mie,%0"::"i"(7));
+	asm volatile("csrrci %0, uie, 7":"=r"(ret)); // turning off timer interrupt
 	return ret;
 }
 /*-----------------------------------------------------------*/
@@ -209,6 +211,8 @@ StackType_t *pxPortInitialiseStack( StackType_t *pxTopOfStack, TaskFunction_t px
 }
 /*-----------------------------------------------------------*/
 
+/** responsible for running scheduler
+ */
 void vPortSysTickHandler( void )
 {
 	prvSetNextTimerInterrupt();
