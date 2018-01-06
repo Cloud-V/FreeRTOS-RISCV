@@ -95,6 +95,99 @@
 .global vTaskIncrementTick
 .global vPortEndScheduler
 .global xExitStack
+.global main
+
+
+
+.org 0
+_start:
+    j boot_strap
+
+	.align 4
+	.globl boot_strap
+
+/* order of these interrupt handlers within the code is critical. DO NOT CHANGE */
+.org 0x10
+_tn_arch_ecall_vector:
+    uret
+    nop 
+    nop
+    nop
+
+/** .section .ebreak_vector: **/
+_tn_arch_ebreak_vector:
+    uret
+    nop
+    nop
+    nop
+
+/** .section .timer_vector **/
+_tn_arch_timer_vector:
+    j TIMER_INT_HANDLER 
+    nop
+    nop
+    nop
+    nop
+    
+/** .section .extern_int_vector: **/
+_tn_arch_extern_int_vector:
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    uret
+
+
+/* Startup code */
+boot_strap:
+    csrrw x0, 0x4, x0 
+    li	x1, 0
+    li	x2, 0
+    li	x3, 0
+    li	x4, 0
+    li	x5, 0
+	li	x6, 0
+    li	x7, 0
+    li	x8, 0
+    li	x9, 0
+    li	x10, 0
+    li	x11, 0
+    li	x12, 0
+    li	x13, 0
+    li	x14, 0
+    li	x15, 0
+    li	x16, 0
+    li	x17, 0
+    li	x18, 0
+    li	x19, 0
+    li	x20, 0
+    li	x21, 0
+    li	x22, 0
+    li	x23, 0
+    li	x24, 0
+    li	x25, 0
+    li	x26, 0
+    li	x27, 0
+    li	x28, 0
+    li	x29, 0
+    li	x30, 0
+    li	x31, 0
+
+init_stack:
+    /* set stack pointer */
+    la	sp, _stack
+	j	main
 
 
 /* Macro for saving task context */
@@ -202,7 +295,7 @@
 	uret
 	.endm
 
-/* Macro for restoring task context */
+
 TIMER_INT_HANDLER:
 	portSAVE_CONTEXT
 	portSAVE_EPC

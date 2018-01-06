@@ -98,9 +98,6 @@
 #include "countsem.h"
 #include "recmutex.h"
 
-/* RISCV includes */
-#include "arch/syscalls.h"
-#include "arch/clib.h"
 
 /* The period after which the check timer will expire provided no errors have
 been reported by any of the standard demo tasks.  ms are converted to the
