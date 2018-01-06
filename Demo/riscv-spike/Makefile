@@ -81,10 +81,9 @@ APP_SRC =  \
 
 PORT_SRC = $(FREERTOS_SOURCE_DIR)/portable/GCC/RISCV/port.c
 PORT_ASM = $(FREERTOS_SOURCE_DIR)/portable/GCC/RISCV/portasm.S
+PROG = main
 
 DEMO_SRC = \
-	arch/syscalls.c \
-	arch/clib.c \
 	main.c
 
 INCLUDES = \
@@ -100,7 +99,7 @@ INCLUDES = \
 CFLAGS = \
 	$(WARNINGS) $(INCLUDES) \
 	-fomit-frame-pointer -fno-strict-aliasing -fno-builtin \
-	-D__gracefulExit -mcmodel=medany #-fPIC
+	-D__gracefulExit -mcmodel=medany -Os -march=rv32i -mabi=ilp32 #-fPIC
 
 GCCVER 	= $(shell $(GCC) --version | grep gcc | cut -d" " -f9)
 
@@ -115,10 +114,10 @@ PORT_ASM_OBJ = $(PORT_ASM:.S=.o)
 CRT0_OBJ = $(CRT0:.S=.o)
 OBJS = $(CRT0_OBJ) $(PORT_ASM_OBJ) $(PORT_OBJ) $(RTOS_OBJ) $(DEMO_OBJ) $(APP_OBJ)
 
-LDFLAGS	 = -T arch/link.ld -nostartfiles -static -nostdlib
+LDFLAGS	 = -T arch/link.ld -nostartfiles -static -nostdlib -nostartfiles  -Os -Xlinker -melf32lriscv 
 LIBS	 = -L$(CCPATH)/lib/gcc/$(TARGET)/$(GCCVER) \
 		   -L$(CCPATH)/$(TARGET)/lib \
-		   -lc -lgcc
+		   -lc -lgcc 
 
 %.o: %.c
 	@echo "    CC $<"

@@ -98,7 +98,7 @@
 .global main
 
 
-
+.global _start
 .org 0
 _start:
     j boot_strap
@@ -186,7 +186,8 @@ boot_strap:
 
 init_stack:
     /* set stack pointer */
-    la	sp, _stack
+    lui     sp, %hi(_fstack)
+	addi    sp, sp, %lo(_fstack)
 	j	main
 
 

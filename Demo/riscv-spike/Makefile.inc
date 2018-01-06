@@ -1,9 +1,9 @@
 # File to be included in all makefiles
 
-RISCV_XLEN ?= 64
+RISCV_XLEN ?= 32
 RISCV_LIB  ?= elf
 
-TARGET=riscv${RISCV_XLEN}-unknown-${RISCV_LIB}
+TARGET=riscv64-unknown-${RISCV_LIB}
 #-----------------------------------------------------------
 GCC		= $(TARGET)-gcc
 OBJCOPY	= $(TARGET)-objcopy
@@ -12,8 +12,6 @@ AR		= $(TARGET)-ar
 RANLIB	= $(TARGET)-ranlib
 CCPATH	= /home/maarten.in_t.hout/riscv-build
 
-PROG	= riscv-spike
-CRT0	= arch/boot.S
 
 FREERTOS_SOURCE_DIR	= ../../Source
 CUNIT	= ../../../cunit

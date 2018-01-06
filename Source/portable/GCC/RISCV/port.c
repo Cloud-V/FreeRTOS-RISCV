@@ -128,7 +128,8 @@ static void prvSetNextTimerInterrupt(void)
     // save temporary register
     asm volatile("sw t0, -4(sp)");
     
-    asm volatile("li t0, %0"
+    asm volatile("add t0, x0, %0"
+        :
         :"r"(timerInterruptFrequency));
     asm volatile("csrrw x0, 0xc01, t0");
 
@@ -176,15 +177,19 @@ void prvTaskExitError( void )
 /* Clear current interrupt mask and set given mask */
 void vPortClearInterruptMask(int mask)
 {
-	asm volatile("csrrw x0, uie, %0"::"r"(mask)); // restoring timer interrupt
+     // restoring timer interrupt
+	asm volatile("csrrw x0, 0x4, %0"
+        :
+        :"r"(mask));
 }
 /*-----------------------------------------------------------*/
 
 /* Set interrupt mask and return current interrupt enable register */
 int vPortSetInterruptMask(void)
 {
-	int ret;
-	asm volatile("csrrci %0, uie, 7":"=r"(ret)); // turning off timer interrupt
+	int ret = 0;
+	asm volatile("csrrci %0, 0x4, 7"
+         :"=r"(ret)); // turning off timer interrupt
 	return ret;
 }
 /*-----------------------------------------------------------*/
