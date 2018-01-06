@@ -141,14 +141,22 @@ extern void vPortClearInterruptMask( int );
 extern void vTaskEnterCritical( void );
 extern void vTaskExitCritical( void );
 
-#define portDISABLE_INTERRUPTS()	__asm volatile 	( "csrrw x0, 0x4, x0" ) 
+#define portDISABLE_INTERRUPTS()	                \
+        asm volatile ( "sw t0, -4(sp)" );               \
+        asm volatile ( "csrrw t0, 0x4, x0" );           \
+        asm volatile ( "andi t0, t0, 1" );              \
+        asm volatile ( "csrrw x0, 0x4, t0" );           \
+        asm volatile ( "lw t0, -4(sp)" );
+
 // be sure to further examine if this will corrupt the stack
 // since we store t0's value temporarly in the stack, 
 // so we can use t0 to fill uie's value
-#define portENABLE_INTERRUPTS()		__asm volatile 	( "sw t0, -4(sp)" ) \	
-        __asm volatile 	( "li t0, 0xffff" ) \ 
-        __asm volatile 	( "csrrw x0, 0x4, t0" ) \ 
-        __asm volatile 	( "lw t0, -4(sp)" ) 
+#define portENABLE_INTERRUPTS()		                \
+        asm volatile 	( "sw t0, -4(sp)" );            \
+        asm volatile 	( "csrrw t0, 0x4, x0" );        \
+        asm volatile 	( "ori t0, t0, 0x1" );          \
+        asm volatile 	( "csrrw x0, 0x4, t0" );        \
+        asm volatile 	( "lw t0, -4(sp)" );            
 
 #define portENTER_CRITICAL()					vTaskEnterCritical()
 #define portEXIT_CRITICAL()						vTaskExitCritical()
