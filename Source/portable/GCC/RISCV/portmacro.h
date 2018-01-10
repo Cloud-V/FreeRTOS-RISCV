@@ -170,6 +170,8 @@ extern void vTaskExitCritical( void );
 
 #define portNOP() __asm volatile 	( " nop " )
 
+unsigned int __mulsi3 (unsigned int a, unsigned int b);
+
 #ifdef __cplusplus
 }
 #endif
