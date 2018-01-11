@@ -88,6 +88,7 @@
  */
 
 /* Kernel includes. */
+#include "FreeRTOSConfig.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
@@ -134,16 +135,16 @@ TimerHandle_t xCheckTimer = NULL;
 	tasks. */
 	// vCreateBlockTimeTasks();
 	// vStartCountingSemaphoreTasks();
-	// vStartRecursiveMutexTasks();
+	// v`StartRecursiveMutexTasks();
 
 	/* Create the software timer that performs the 'check' functionality,
 	as described at the top of this file. */
-	// xCheckTimer = xTimerCreate( "CheckTimer",					/* A text name, purely to help debugging. */
-	// 							( mainCHECK_TIMER_PERIOD_MS ),	/* The timer period, in this case 3000ms (3s). */
-	// 							pdTRUE,							/* This is an auto-reload timer, so xAutoReload is set to pdTRUE. */
-	// 							( void * ) 0,					/* The ID is not used, so can be set to anything. */
-	// 							prvCheckTimerCallback			/* The callback function that inspects the status of all the other tasks. */
-	// 						  );
+	xCheckTimer = xTimerCreate( "CheckTimer",					/* A text name, purely to help debugging. */
+		( mainCHECK_TIMER_PERIOD_MS ),	/* The timer period, in this case 3000ms (3s). */
+		pdTRUE,							/* This is an auto-reload timer, so xAutoReload is set to pdTRUE. */
+		( void * ) 0,					/* The ID is not used, so can be set to anything. */
+		prvCheckTimerCallback			/* The callback function that inspects the status of all the other tasks. */
+		);
 
 	/* If the software timer was created successfully, start it.  It won't
 	actually start running until the scheduler starts.  A block time of
@@ -164,43 +165,11 @@ TimerHandle_t xCheckTimer = NULL;
 /*-----------------------------------------------------------*/
 
 // /* See the description at the top of this file. */
-// static void prvCheckTimerCallback(__attribute__ ((unused)) TimerHandle_t xTimer )
-// {
-// unsigned long ulErrorFound = pdFALSE;
+static void prvCheckTimerCallback(__attribute__ ((unused)) TimerHandle_t xTimer )
+{
 
-// 	/* Check all the demo and test tasks to ensure that they are all still
-// 	running, and that none have detected an error. */
-
-// 	if( xAreBlockTimeTestTasksStillRunning() != pdPASS )
-// 	{
-// 		printf("Error in block time test tasks \r\n");
-// 		ulErrorFound |= ( 0x01UL << 1UL );
-// 	}
-
-// 	if( xAreCountingSemaphoreTasksStillRunning() != pdPASS )
-// 	{
-// 		printf("Error in counting semaphore tasks \r\n");
-// 		ulErrorFound |= ( 0x01UL << 2UL );
-// 	}
-
-// 	if( xAreRecursiveMutexTasksStillRunning() != pdPASS )
-// 	{
-// 		printf("Error in recursive mutex tasks \r\n");
-// 		ulErrorFound |= ( 0x01UL << 3UL );
-// 	}
-
-// 	if( ulErrorFound != pdFALSE )
-// 	{
-// 		__asm volatile("li t6, 0xbeefdead");
-// 		printf("Error found! \r\n");
-// 	}else{
-// 		__asm volatile("li t6, 0xdeadbeef");
-// 		printf("PASS! \r\n");
-// 	}
-
-// 	/* Stop scheduler */
-//     vTaskEndScheduler();
-// }
+	vTaskEndScheduler();
+}
 /*-----------------------------------------------------------*/
 
 void vApplicationMallocFailedHook( void )

@@ -88,18 +88,17 @@ DEMO_SRC = \
 
 INCLUDES = \
 	-I. \
-	-I$(RISCV)/include/spike \
 	-I./arch \
 	-I./conf \
 	-I./include \
 	-I$(FREERTOS_SOURCE_DIR)/include \
-	-I../Common/include \
 	-I$(FREERTOS_SOURCE_DIR)/portable/GCC/RISCV
 
 CFLAGS = \
 	$(WARNINGS) $(INCLUDES) \
-	-fomit-frame-pointer -fno-strict-aliasing -fno-builtin \
-	-D__gracefulExit -mcmodel=medany -Os -march=rv32i -mabi=ilp32 #-fPIC
+	-fomit-frame-pointer -fno-strict-aliasing \
+	 -mcmodel=medany -Os -march=rv32i -mabi=ilp32 \
+	 -ffunction-sections -fdata-sections#-fPIC
 
 GCCVER 	= $(shell $(GCC) --version | grep gcc | cut -d" " -f9)
 
@@ -115,7 +114,8 @@ CRT0_OBJ = $(CRT0:.S=.o)
 OBJS = $(CRT0_OBJ) $(PORT_ASM_OBJ) $(PORT_OBJ) $(RTOS_OBJ) $(DEMO_OBJ) $(APP_OBJ)
 
 LDFLAGS	 = -T arch/link.ld -nostartfiles -static -nostdlib -nostartfiles \
-	  -Os -march=rv32i -mabi=ilp32  -Xlinker -melf32lriscv 
+	  -Os -march=rv32i -mabi=ilp32  -Xlinker -melf32lriscv  -ffunction-sections -fdata-sections \
+		-Xlinker 
 LIBS	 = -L$(CCPATH)/lib/gcc/$(TARGET)/$(GCCVER) \
 		   -L$(CCPATH)/$(TARGET)/lib \
 		   -lc -lgcc 

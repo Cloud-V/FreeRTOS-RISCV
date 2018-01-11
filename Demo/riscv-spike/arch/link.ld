@@ -72,9 +72,6 @@
 
 OUTPUT_ARCH( "riscv" )
 
-_STACK_SIZE = DEFINED(_STACK_SIZE) ? _STACK_SIZE : 0x1000;
-_HEAP_SIZE = DEFINED(_HEAP_SIZE) ? _HEAP_SIZE : 0x1000;
-
 /*****************************************************************************
  * Define memory layout
  ****************************************************************************/
@@ -82,9 +79,9 @@ MEMORY
 {
     ram :
         ORIGIN = 0x00000000,
-        LENGTH = 200K
+        LENGTH = 150K
     stack :
-        ORIGIN = 200K
+        ORIGIN = 100K
         LENGTH = 6K
 }
 
