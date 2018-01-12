@@ -51,6 +51,7 @@ void AUIPC(unsigned int, unsigned int);
 void printInstUJ(string, unsigned int, unsigned int);
 void JAL(unsigned int, unsigned int);
 
+void printInstSys(string inst, unsigned int rd, unsigned int rs1, unsigned int rs2);
 void printInstB(string, unsigned int, unsigned int, unsigned int);
 void JALR(unsigned int, unsigned int, unsigned int);
 void B_Inst(unsigned int, unsigned int, unsigned int, unsigned int);
@@ -707,6 +708,12 @@ void ANDI(unsigned int rd, unsigned int rs1, unsigned int I_imm)
     regs[rd] = regs[rs1] & int(I_imm);
 }
 
+void printInstSys(string inst, unsigned int rd, unsigned int rs1, unsigned int rs2)
+{
+    cout << dec;
+    cout << '\t' << inst << "\tx" << rd << ", " << rs1 << ", x" << rs2 <<hex<<"( 0x"<< regs[rs2] <<" )"<< endl;
+    //cout <<"RF["<<rd<<"]="<< regs[rd] << endl;
+}
 
 void printInstR(string inst, unsigned int rd, unsigned int rs1, unsigned int rs2)
 {
@@ -904,6 +911,7 @@ void SYS_Inst(int rd, int rs1, int imm, int func)
             int tmp = regs[rs1];
             regs[rd] = uie;
             uie = tmp;
+            printInstSys("csrrw ", rd, 0x4 ,rs1);
         }else if(imm  == 0xc01){ // csrrw rd, timer, rs1
             int tmp = regs[rs1];
             regs[rd] = timer;
@@ -924,6 +932,12 @@ void SYS_Inst(int rd, int rs1, int imm, int func)
             throw "Accessing unimplemented control/status register";
         }
         puts("\n doing CSRRW operation");
+    }else if(func == 0x7 && imm == 0x4){
+        int clearBit = 1<<rs1;
+        if(uie & clearBit != 0)
+            uie ^= clearBit;
+        regs[rd] = uie;
+        printInstSys("csrrci", regs[rd], imm, rs1);
     }else if(imm == 1 && rs1 == 0 && rd == 0 && func == 0){
         EBREAK();
     }else{
@@ -1017,7 +1031,7 @@ void checkForBreakpoints()
 
         // printf("---END---BREAKPOINT-----------------------------------\n");
 
-        void *ptr = memory + 13800;
+        void *ptr = memory + 14976;
         int *num = (int *) ptr;
 
         puts("final test array");
