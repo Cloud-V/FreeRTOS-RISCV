@@ -1031,7 +1031,7 @@ void checkForBreakpoints()
 
         // printf("---END---BREAKPOINT-----------------------------------\n");
 
-        void *ptr = memory + 14976;
+        void *ptr = memory + 13760;
         int *num = (int *) ptr;
 
         puts("final test array");
