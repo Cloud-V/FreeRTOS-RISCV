@@ -78,7 +78,6 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "portmacro.h"
-#include "configstring.h"
 
 
 /* A variable is used to keep track of the critical section nesting.  This
@@ -93,13 +92,7 @@ static UBaseType_t uxCriticalNesting = 0xaaaaaaaa;
 BaseType_t xStartContext[31] = {0};
 #endif
 
-volatile uint64_t* mtime;
-volatile uint64_t* timecmp;
-
-void parse_config_string(void);
-static void query_rtc(const char* config_string);
-
-
+volatile unsigned int timerInterruptFrequency = 10000;
 /*
  * Handler for timer interrupt
  */
@@ -132,21 +125,38 @@ static void prvTaskExitError( void );
  */
 static void prvSetNextTimerInterrupt(void)
 {
-    if (mtime && timecmp) 
-        *timecmp = *mtime + (configTICK_CLOCK_HZ / configTICK_RATE_HZ);
+    // save temporary register
+    asm volatile("sw t0, -4(sp)");
+    
+    asm volatile("add t0, x0, %0"
+        :
+        :"r"(timerInterruptFrequency));
+    asm volatile("csrrw x0, 0xc01, t0");
+
+    // load temporary register
+    asm volatile("lw t0, -4(sp)");
 }
 /*-----------------------------------------------------------*/
 
 /* Sets and enable the timer interrupt */
 void vPortSetupTimer(void)
 {
-    parse_config_string();
 
     /* reuse existing routine */
     prvSetNextTimerInterrupt();
 
-	/* Enable timer interupt */
-	__asm volatile("csrs mie,%0"::"r"(0x80));
+	/* store t0 register */
+	asm volatile("sw t0, -4(sp)");
+
+    /* 
+       the second bit is responsible for 
+       enabling the timer
+    */
+    asm volatile("csrrw t0, 0x4, x0");
+    asm volatile("ori t0, t0, 0x2");
+    asm volatile("csrrw x0, 0x4, t0");
+
+    asm volatile("lw t0, -4(sp)");
 }
 /*-----------------------------------------------------------*/
 
@@ -167,16 +177,19 @@ void prvTaskExitError( void )
 /* Clear current interrupt mask and set given mask */
 void vPortClearInterruptMask(int mask)
 {
-	__asm volatile("csrw mie, %0"::"r"(mask));
+     // restoring timer interrupt
+	asm volatile("csrrw x0, 0x4, %0"
+        :
+        :"r"(mask));
 }
 /*-----------------------------------------------------------*/
 
 /* Set interrupt mask and return current interrupt enable register */
 int vPortSetInterruptMask(void)
 {
-	int ret;
-	__asm volatile("csrr %0,mie":"=r"(ret));
-	__asm volatile("csrc mie,%0"::"i"(7));
+	int ret = 0;
+	asm volatile("csrrci %0, 0x4, 7"
+         :"=r"(ret)); // turning off timer interrupt
 	return ret;
 }
 /*-----------------------------------------------------------*/
@@ -187,7 +200,7 @@ int vPortSetInterruptMask(void)
  */
 StackType_t *pxPortInitialiseStack( StackType_t *pxTopOfStack, TaskFunction_t pxCode, void *pvParameters )
 {
-	/* Simulate the stack frame as it would be created by a context switch
+	/*Simulate the stack frame as it would be created by a context switch
 	interrupt. */
 	register int *tp asm("x3");
 	pxTopOfStack--;
@@ -203,6 +216,8 @@ StackType_t *pxPortInitialiseStack( StackType_t *pxTopOfStack, TaskFunction_t px
 }
 /*-----------------------------------------------------------*/
 
+/** responsible for running scheduler
+ */
 void vPortSysTickHandler( void )
 {
 	prvSetNextTimerInterrupt();
@@ -213,26 +228,17 @@ void vPortSysTickHandler( void )
 		vTaskSwitchContext();
 	}
 }
-/*-----------------------------------------------------------*/
 
-static void query_rtc(const char* config_string)
-{
-  query_result res = query_config_string(config_string, "rtc{addr");
-  assert(res.start);
-  mtime = (void*)(uintptr_t)get_uint(res);
-}
+/*--------------------------------------------------------*/
+unsigned int __mulsi3 (unsigned int a, unsigned int b){
+  unsigned int r = 0;
 
-static void query_timecmp(const char* config_string)
-{
-    query_result res = query_config_string(config_string, "core{0{0{timecmp");
-    assert(res.start);
-    timecmp = (void*)(uintptr_t)get_uint(res);
-}
-
-void parse_config_string()
-{
-  uint32_t addr = *(uint32_t*)CONFIG_STRING_ADDR;
-  const char* s = (const char*)(uintptr_t)addr;
-  query_rtc(s);
-  query_timecmp(s);
+  while (a)
+    {
+      if (a & 1)
+	r += b;
+      a >>= 1;
+      b <<= 1;
+    }
+  return r;
 }

@@ -88,19 +88,14 @@
  */
 
 /* Kernel includes. */
+#include "FreeRTOSConfig.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
 #include "timers.h"
 
-/* Common demo includes. */
-#include "blocktim.h"
-#include "countsem.h"
-#include "recmutex.h"
 
-/* RISCV includes */
-#include "arch/syscalls.h"
-#include "arch/clib.h"
+void sortTask(void *prvParams);
 
 /* The period after which the check timer will expire provided no errors have
 been reported by any of the standard demo tasks.  ms are converted to the
@@ -132,36 +127,26 @@ void vApplicationIdleHook( void );
  */
 void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName );
 
-/*-----------------------------------------------------------*/
+const int size = 150;
+int TEST_ARR[150];
 
+
+/*-----------------------------------------------------------*/
 int main( void )
 {
-TimerHandle_t xCheckTimer = NULL;
+    for(int i = 0; i < size; ++i)
+        TEST_ARR[i] = size - i;
+    
+    xTaskCreate(
+        sortTask,
+        "sortTask",
+        96,
+        NULL,
+        1,
+        NULL
+    );
 
-	/* Create the standard demo tasks, including the interrupt nesting test
-	tasks. */
-	vCreateBlockTimeTasks();
-	vStartCountingSemaphoreTasks();
-	vStartRecursiveMutexTasks();
-
-	/* Create the software timer that performs the 'check' functionality,
-	as described at the top of this file. */
-	xCheckTimer = xTimerCreate( "CheckTimer",					/* A text name, purely to help debugging. */
-								( mainCHECK_TIMER_PERIOD_MS ),	/* The timer period, in this case 3000ms (3s). */
-								pdTRUE,							/* This is an auto-reload timer, so xAutoReload is set to pdTRUE. */
-								( void * ) 0,					/* The ID is not used, so can be set to anything. */
-								prvCheckTimerCallback			/* The callback function that inspects the status of all the other tasks. */
-							  );
-
-	/* If the software timer was created successfully, start it.  It won't
-	actually start running until the scheduler starts.  A block time of
-	zero is used in this call, although any value could be used as the block
-	time will be ignored because the scheduler has not started yet. */
-	if( xCheckTimer != NULL )
-	{
-		xTimerStart( xCheckTimer, mainDONT_BLOCK );
-	}
-
+    vPortSetupTimer();
 
 	/* Start the kernel.  From here on, only tasks and interrupts will run. */
 	vTaskStartScheduler();
@@ -171,43 +156,11 @@ TimerHandle_t xCheckTimer = NULL;
 }
 /*-----------------------------------------------------------*/
 
-/* See the description at the top of this file. */
+// /* See the description at the top of this file. */
 static void prvCheckTimerCallback(__attribute__ ((unused)) TimerHandle_t xTimer )
 {
-unsigned long ulErrorFound = pdFALSE;
 
-	/* Check all the demo and test tasks to ensure that they are all still
-	running, and that none have detected an error. */
-
-	if( xAreBlockTimeTestTasksStillRunning() != pdPASS )
-	{
-		printf("Error in block time test tasks \r\n");
-		ulErrorFound |= ( 0x01UL << 1UL );
-	}
-
-	if( xAreCountingSemaphoreTasksStillRunning() != pdPASS )
-	{
-		printf("Error in counting semaphore tasks \r\n");
-		ulErrorFound |= ( 0x01UL << 2UL );
-	}
-
-	if( xAreRecursiveMutexTasksStillRunning() != pdPASS )
-	{
-		printf("Error in recursive mutex tasks \r\n");
-		ulErrorFound |= ( 0x01UL << 3UL );
-	}
-
-	if( ulErrorFound != pdFALSE )
-	{
-		__asm volatile("li t6, 0xbeefdead");
-		printf("Error found! \r\n");
-	}else{
-		__asm volatile("li t6, 0xdeadbeef");
-		printf("PASS! \r\n");
-	}
-
-	/* Stop scheduler */
-    vTaskEndScheduler();
+	vTaskEndScheduler();
 }
 /*-----------------------------------------------------------*/
 
@@ -254,3 +207,23 @@ void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName )
 	for( ;; );
 }
 /*-----------------------------------------------------------*/
+
+void sortTask(void *prvParams)
+{
+    for(int i = 0; i < size;i++){
+        TEST_ARR[i] = size - i;
+    }
+
+    int i, j;
+    for (i = 0; i < size-1; i++){
+        for (j = 0; j < size-i-1; j++){
+            if (TEST_ARR[j] > TEST_ARR[j+1]){
+                int temp = TEST_ARR[j];
+                TEST_ARR[j] = TEST_ARR[j+1];
+                TEST_ARR[j+1] = temp;
+            }
+        } 
+    }
+
+    while(1);
+}

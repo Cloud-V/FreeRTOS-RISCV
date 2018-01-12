@@ -71,36 +71,36 @@ FREERTOS_SRC = \
 	$(FREERTOS_SOURCE_DIR)/string.c
 
 
-APP_SOURCE_DIR	= ../Common/Minimal
+#APP_SOURCE_DIR	= ../Common/Minimal
 
-APP_SRC =  \
-	$(APP_SOURCE_DIR)/blocktim.c \
-	$(APP_SOURCE_DIR)/countsem.c \
-	$(APP_SOURCE_DIR)/recmutex.c
+# APP_SRC =  \
+# 	$(APP_SOURCE_DIR)/blocktim.c \
+# 	$(APP_SOURCE_DIR)/countsem.c \
+# 	$(APP_SOURCE_DIR)/recmutex.c
 		
 
 PORT_SRC = $(FREERTOS_SOURCE_DIR)/portable/GCC/RISCV/port.c
 PORT_ASM = $(FREERTOS_SOURCE_DIR)/portable/GCC/RISCV/portasm.S
+PROG = main
 
 DEMO_SRC = \
-	arch/syscalls.c \
-	arch/clib.c \
 	main.c
 
 INCLUDES = \
 	-I. \
-	-I$(RISCV)/include/spike \
 	-I./arch \
 	-I./conf \
 	-I./include \
 	-I$(FREERTOS_SOURCE_DIR)/include \
-	-I../Common/include \
 	-I$(FREERTOS_SOURCE_DIR)/portable/GCC/RISCV
 
 CFLAGS = \
 	$(WARNINGS) $(INCLUDES) \
-	-fomit-frame-pointer -fno-strict-aliasing -fno-builtin \
-	-D__gracefulExit -mcmodel=medany #-fPIC
+	-fomit-frame-pointer -fno-strict-aliasing \
+	-Os -march=rv32i -mabi=ilp32 \
+	 -ffunction-sections -fdata-sections \
+	 -Xlinker -Map=output.map 
+#-fPIC
 
 GCCVER 	= $(shell $(GCC) --version | grep gcc | cut -d" " -f9)
 
@@ -115,10 +115,11 @@ PORT_ASM_OBJ = $(PORT_ASM:.S=.o)
 CRT0_OBJ = $(CRT0:.S=.o)
 OBJS = $(CRT0_OBJ) $(PORT_ASM_OBJ) $(PORT_OBJ) $(RTOS_OBJ) $(DEMO_OBJ) $(APP_OBJ)
 
-LDFLAGS	 = -T arch/link.ld -nostartfiles -static -nostdlib
+LDFLAGS	 = -T arch/link.ld -nostartfiles -static -nostdlib -nostartfiles \
+	  -Os -march=rv32i -mabi=ilp32  -Xlinker -melf32lriscv 
 LIBS	 = -L$(CCPATH)/lib/gcc/$(TARGET)/$(GCCVER) \
 		   -L$(CCPATH)/$(TARGET)/lib \
-		   -lc -lgcc
+		   -lc -lgcc 
 
 %.o: %.c
 	@echo "    CC $<"
@@ -134,6 +135,7 @@ $(PROG).elf  : $(OBJS) Makefile
 	@echo Linking....
 	@$(GCC) -o $@ $(LDFLAGS) $(OBJS) $(LIBS)
 	@$(OBJDUMP) -S $(PROG).elf > $(PROG).asm	
+	@$(OBJCOPY) -O binary $(PROG).elf $(PROG)
 	@echo Completed $@
 
 clean :
@@ -141,6 +143,7 @@ clean :
 	@rm -f $(PROG).elf 
 	@rm -f $(PROG).map
 	@rm -f $(PROG).asm
+	@rm -f $(PROG)
 
 force_true:
 	@true

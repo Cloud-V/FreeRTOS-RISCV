@@ -85,7 +85,6 @@
 #define UIE 0x4 // controls registers responsible for interrupt enable/disable
 
 /* Enable interrupts when returning from the handler */
-#define MSTATUS_PRV1 0x1880
 #define UIE_ENABLE_ALL 0xFFFF // enables possible interrupts
 
 .global portSAVE_CONTEXT
@@ -96,6 +95,101 @@
 .global vTaskIncrementTick
 .global vPortEndScheduler
 .global xExitStack
+.global main
+
+
+.global _start
+.org 0
+_start:
+    j boot_strap
+
+	.align 4
+	.globl boot_strap
+
+/* order of these interrupt handlers within the code is critical. DO NOT CHANGE */
+.org 0x10
+_tn_arch_ecall_vector:
+    uret
+    nop 
+    nop
+    nop
+
+/** .section .ebreak_vector: **/
+_tn_arch_ebreak_vector:
+    uret
+    nop
+    nop
+    nop
+
+/** .section .timer_vector **/
+_tn_arch_timer_vector:
+    j TIMER_INT_HANDLER 
+    nop
+    nop
+    nop
+    nop
+    
+/** .section .extern_int_vector: **/
+_tn_arch_extern_int_vector:
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    uret
+
+
+/* Startup code */
+boot_strap:
+	addi t0, x0, -1
+    csrrw x0, 0x4, t0
+    li	x1, 0
+    li	x2, 0
+    li	x3, 0
+    li	x4, 0
+    li	x5, 0
+	li	x6, 0
+    li	x7, 0
+    li	x8, 0
+    li	x9, 0
+    li	x10, 0
+    li	x11, 0
+    li	x12, 0
+    li	x13, 0
+    li	x14, 0
+    li	x15, 0
+    li	x16, 0
+    li	x17, 0
+    li	x18, 0
+    li	x19, 0
+    li	x20, 0
+    li	x21, 0
+    li	x22, 0
+    li	x23, 0
+    li	x24, 0
+    li	x25, 0
+    li	x26, 0
+    li	x27, 0
+    li	x28, 0
+    li	x29, 0
+    li	x30, 0
+    li	x31, 0
+
+init_stack:
+    /* set stack pointer */
+    lui     sp, %hi(_fstack)
+	addi    sp, sp, %lo(_fstack)
+	j	main
 
 
 /* Macro for saving task context */
@@ -167,12 +261,6 @@
 	LOAD	t0, 31 * REGBYTES(sp)
   	csrrw	zero ,EPC, t0 // load new epc
 
-//	/* Run in machine mode */
-//  	li 		t0, MSTATUS_PRV1
-//  	csrs	mstatus, t0
-	li t0, UIE_ENABLE_ALL
-	csrrw x0, UIE, t0
-
 	/* Restore registers,
 	   Skip global pointer because that does not change */
 	LOAD	x1, 0x0(sp)
@@ -209,8 +297,8 @@
 	uret
 	.endm
 
-/* Macro for restoring task context */
-TIMER_CMP_INT:
+
+TIMER_INT_HANDLER:
 	portSAVE_CONTEXT
 	portSAVE_EPC
 	jal	vPortSysTickHandler
@@ -255,6 +343,7 @@ xPortStartScheduler:
 	STORE	x30, 29 * REGBYTES(t0)
 	STORE	x31, 30 * REGBYTES(t0)
 #endif
+	
 	jal		vPortSetupTimer
 	portRESTORE_CONTEXT
 
@@ -305,14 +394,83 @@ vPortYield:
 	*  The write to mstatus in the restore context routine will enable interrupts after the
 	*  mret. A more fine-grain lock may be possible.
 	*/  
-	/** this my be problematic
-		ideally, we would set  global interrupts to 0
-		but we dont have anything other than csrrw, so we override everything
-		and then enable it again later
-	**/
-	csrrw x0, UIE, x0  
+	csrrci x0, UIE, 0x1
 
 	portSAVE_CONTEXT
 	portSAVE_RA
 	jal	vTaskSwitchContext
 	portRESTORE_CONTEXT
+
+/* For when a trap is fired */
+external_interrupt_handler:
+	/* System call and other traps */
+	addi sp, sp, -REGBYTES*31
+	STORE x1, 1*REGBYTES(sp)
+	STORE x2, 2*REGBYTES(sp)
+	STORE x3, 3*REGBYTES(sp)
+	STORE x4, 4*REGBYTES(sp)
+	STORE x5, 5*REGBYTES(sp)
+	STORE x6, 6*REGBYTES(sp)
+	STORE x7, 7*REGBYTES(sp)
+	STORE x8, 8*REGBYTES(sp)
+	STORE x9, 9*REGBYTES(sp)
+	STORE x10, 10*REGBYTES(sp)
+	STORE x11, 11*REGBYTES(sp)
+	STORE x12, 12*REGBYTES(sp)
+	STORE x13, 13*REGBYTES(sp)
+	STORE x14, 14*REGBYTES(sp)
+	STORE x15, 15*REGBYTES(sp)
+	STORE x16, 16*REGBYTES(sp)
+	STORE x17, 17*REGBYTES(sp)
+	STORE x18, 18*REGBYTES(sp)
+	STORE x19, 19*REGBYTES(sp)
+	STORE x20, 20*REGBYTES(sp)
+	STORE x21, 21*REGBYTES(sp)
+	STORE x22, 22*REGBYTES(sp)
+	STORE x23, 23*REGBYTES(sp)
+	STORE x24, 24*REGBYTES(sp)
+	STORE x25, 25*REGBYTES(sp)
+	STORE x26, 26*REGBYTES(sp)
+	STORE x27, 27*REGBYTES(sp)
+	STORE x28, 28*REGBYTES(sp)
+	STORE x29, 29*REGBYTES(sp)
+	STORE x30, 30*REGBYTES(sp)
+	STORE x31, 31*REGBYTES(sp)
+
+	/* caller appropriate handler */
+
+	/* time to resume normal execution */
+	LOAD x1, 1*REGBYTES(sp)
+	LOAD x2, 2*REGBYTES(sp)
+	LOAD x3, 3*REGBYTES(sp)
+	LOAD x4, 4*REGBYTES(sp)
+	LOAD x5, 5*REGBYTES(sp)
+	LOAD x6, 6*REGBYTES(sp)
+	LOAD x7, 7*REGBYTES(sp)
+	LOAD x8, 8*REGBYTES(sp)
+	LOAD x9, 9*REGBYTES(sp)
+	LOAD x10, 10*REGBYTES(sp)
+	LOAD x11, 11*REGBYTES(sp)
+	LOAD x12, 12*REGBYTES(sp)
+	LOAD x13, 13*REGBYTES(sp)
+	LOAD x14, 14*REGBYTES(sp)
+	LOAD x15, 15*REGBYTES(sp)
+	LOAD x16, 16*REGBYTES(sp)
+	LOAD x17, 17*REGBYTES(sp)
+	LOAD x18, 18*REGBYTES(sp)
+	LOAD x19, 19*REGBYTES(sp)
+	LOAD x20, 20*REGBYTES(sp)
+	LOAD x21, 21*REGBYTES(sp)
+	LOAD x22, 22*REGBYTES(sp)
+	LOAD x23, 23*REGBYTES(sp)
+	LOAD x24, 24*REGBYTES(sp)
+	LOAD x25, 25*REGBYTES(sp)
+	LOAD x26, 26*REGBYTES(sp)
+	LOAD x27, 27*REGBYTES(sp)
+	LOAD x28, 28*REGBYTES(sp)
+	LOAD x29, 29*REGBYTES(sp)
+	LOAD x30, 30*REGBYTES(sp)
+	LOAD x31, 31*REGBYTES(sp)
+
+	addi sp, sp, REGBYTES*31
+	uret
