@@ -151,7 +151,8 @@ _tn_arch_extern_int_vector:
 
 /* Startup code */
 boot_strap:
-    csrrw x0, 0x4, x0 
+	addi t0, x0, -1
+    csrrw x0, 0x4, t0
     li	x1, 0
     li	x2, 0
     li	x3, 0

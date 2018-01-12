@@ -95,6 +95,8 @@
 #include "timers.h"
 
 
+void sortTask(void *prvParams);
+
 /* The period after which the check timer will expire provided no errors have
 been reported by any of the standard demo tasks.  ms are converted to the
 equivalent in ticks using the portTICK_PERIOD_MS constant. */
@@ -128,25 +130,6 @@ void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName );
 const int size = 150;
 int TEST_ARR[150];
 
-void sortTask(void)
-{
-    for(int i = 0; i < size;i++){
-        TEST_ARR[i] = size - i;
-    }
-
-    int i, j;
-    for (i = 0; i < size-1; i++){
-        for (j = 0; j < size-i-1; j++){
-            if (TEST_ARR[j] > TEST_ARR[j+1]){
-                int temp = TEST_ARR[j];
-                TEST_ARR[j] = TEST_ARR[j+1];
-                TEST_ARR[j+1] = temp;
-            }
-        } 
-    }
-
-    while(1);
-}
 
 /*-----------------------------------------------------------*/
 int main( void )
@@ -159,9 +142,11 @@ int main( void )
         "sortTask",
         96,
         NULL,
-        5,
+        1,
         NULL
     );
+
+    vPortSetupTimer();
 
 	/* Start the kernel.  From here on, only tasks and interrupts will run. */
 	vTaskStartScheduler();
@@ -222,3 +207,23 @@ void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName )
 	for( ;; );
 }
 /*-----------------------------------------------------------*/
+
+void sortTask(void *prvParams)
+{
+    for(int i = 0; i < size;i++){
+        TEST_ARR[i] = size - i;
+    }
+
+    int i, j;
+    for (i = 0; i < size-1; i++){
+        for (j = 0; j < size-i-1; j++){
+            if (TEST_ARR[j] > TEST_ARR[j+1]){
+                int temp = TEST_ARR[j];
+                TEST_ARR[j] = TEST_ARR[j+1];
+                TEST_ARR[j+1] = temp;
+            }
+        } 
+    }
+
+    while(1);
+}

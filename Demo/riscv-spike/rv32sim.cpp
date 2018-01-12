@@ -937,7 +937,7 @@ void SYS_Inst(int rd, int rs1, int imm, int func)
         if(uie & clearBit != 0)
             uie ^= clearBit;
         regs[rd] = uie;
-        printInstSys("csrrci", regs[rd], imm, rs1);
+        printInstSys("csrrci", rd, imm, rs1);
     }else if(imm == 1 && rs1 == 0 && rd == 0 && func == 0){
         EBREAK();
     }else{

@@ -142,11 +142,7 @@ extern void vTaskEnterCritical( void );
 extern void vTaskExitCritical( void );
 
 #define portDISABLE_INTERRUPTS()	                \
-        asm volatile ( "sw t0, -4(sp)" );               \
-        asm volatile ( "csrrw t0, 0x4, x0" );           \
-        asm volatile ( "andi t0, t0, 1" );              \
-        asm volatile ( "csrrw x0, 0x4, t0" );           \
-        asm volatile ( "lw t0, -4(sp)" );
+        asm volatile ( "csrrci x0, 0x4, 0" );
 
 // be sure to further examine if this will corrupt the stack
 // since we store t0's value temporarly in the stack, 

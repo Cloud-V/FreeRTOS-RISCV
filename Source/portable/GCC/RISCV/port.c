@@ -92,7 +92,7 @@ static UBaseType_t uxCriticalNesting = 0xaaaaaaaa;
 BaseType_t xStartContext[31] = {0};
 #endif
 
-volatile unsigned int timerInterruptFrequency = 100000;
+volatile unsigned int timerInterruptFrequency = 10000;
 /*
  * Handler for timer interrupt
  */
