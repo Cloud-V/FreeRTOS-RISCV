@@ -79,9 +79,9 @@ MEMORY
 {
     ram :
         ORIGIN = 0x00000000,
-        LENGTH = 150K
+        LENGTH = 30K
     stack :
-        ORIGIN = 100K
+        ORIGIN = 30K
         LENGTH = 6K
 }
 

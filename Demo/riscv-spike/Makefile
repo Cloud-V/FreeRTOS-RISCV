@@ -97,8 +97,10 @@ INCLUDES = \
 CFLAGS = \
 	$(WARNINGS) $(INCLUDES) \
 	-fomit-frame-pointer -fno-strict-aliasing \
-	 -mcmodel=medany -Os -march=rv32i -mabi=ilp32 \
-	 -ffunction-sections -fdata-sections#-fPIC
+	-Os -march=rv32i -mabi=ilp32 \
+	 -ffunction-sections -fdata-sections \
+	 -Xlinker -Map=output.map 
+#-fPIC
 
 GCCVER 	= $(shell $(GCC) --version | grep gcc | cut -d" " -f9)
 
@@ -114,8 +116,7 @@ CRT0_OBJ = $(CRT0:.S=.o)
 OBJS = $(CRT0_OBJ) $(PORT_ASM_OBJ) $(PORT_OBJ) $(RTOS_OBJ) $(DEMO_OBJ) $(APP_OBJ)
 
 LDFLAGS	 = -T arch/link.ld -nostartfiles -static -nostdlib -nostartfiles \
-	  -Os -march=rv32i -mabi=ilp32  -Xlinker -melf32lriscv  -ffunction-sections -fdata-sections \
-		-Xlinker 
+	  -Os -march=rv32i -mabi=ilp32  -Xlinker -melf32lriscv 
 LIBS	 = -L$(CCPATH)/lib/gcc/$(TARGET)/$(GCCVER) \
 		   -L$(CCPATH)/$(TARGET)/lib \
 		   -lc -lgcc 
@@ -134,6 +135,7 @@ $(PROG).elf  : $(OBJS) Makefile
 	@echo Linking....
 	@$(GCC) -o $@ $(LDFLAGS) $(OBJS) $(LIBS)
 	@$(OBJDUMP) -S $(PROG).elf > $(PROG).asm	
+	@$(OBJCOPY) -O binary $(PROG).elf $(PROG)
 	@echo Completed $@
 
 clean :
@@ -141,6 +143,7 @@ clean :
 	@rm -f $(PROG).elf 
 	@rm -f $(PROG).map
 	@rm -f $(PROG).asm
+	@rm -f $(PROG)
 
 force_true:
 	@true

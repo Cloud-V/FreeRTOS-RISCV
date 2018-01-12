@@ -125,36 +125,43 @@ void vApplicationIdleHook( void );
  */
 void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName );
 
-/*-----------------------------------------------------------*/
+const int size = 150;
+int TEST_ARR[150];
 
+void sortTask(void)
+{
+    for(int i = 0; i < size;i++){
+        TEST_ARR[i] = size - i;
+    }
+
+    int i, j;
+    for (i = 0; i < size-1; i++){
+        for (j = 0; j < size-i-1; j++){
+            if (TEST_ARR[j] > TEST_ARR[j+1]){
+                int temp = TEST_ARR[j];
+                TEST_ARR[j] = TEST_ARR[j+1];
+                TEST_ARR[j+1] = temp;
+            }
+        } 
+    }
+
+    while(1);
+}
+
+/*-----------------------------------------------------------*/
 int main( void )
 {
-TimerHandle_t xCheckTimer = NULL;
-
-	/* Create the standard demo tasks, including the interrupt nesting test
-	tasks. */
-	// vCreateBlockTimeTasks();
-	// vStartCountingSemaphoreTasks();
-	// v`StartRecursiveMutexTasks();
-
-	/* Create the software timer that performs the 'check' functionality,
-	as described at the top of this file. */
-	xCheckTimer = xTimerCreate( "CheckTimer",					/* A text name, purely to help debugging. */
-		( mainCHECK_TIMER_PERIOD_MS ),	/* The timer period, in this case 3000ms (3s). */
-		pdTRUE,							/* This is an auto-reload timer, so xAutoReload is set to pdTRUE. */
-		( void * ) 0,					/* The ID is not used, so can be set to anything. */
-		prvCheckTimerCallback			/* The callback function that inspects the status of all the other tasks. */
-		);
-
-	/* If the software timer was created successfully, start it.  It won't
-	actually start running until the scheduler starts.  A block time of
-	zero is used in this call, although any value could be used as the block
-	time will be ignored because the scheduler has not started yet. */
-	if( xCheckTimer != NULL )
-	{
-		xTimerStart( xCheckTimer, mainDONT_BLOCK );
-	}
-
+    for(int i = 0; i < size; ++i)
+        TEST_ARR[i] = size - i;
+    
+    xTaskCreate(
+        sortTask,
+        "sortTask",
+        96,
+        NULL,
+        5,
+        NULL
+    );
 
 	/* Start the kernel.  From here on, only tasks and interrupts will run. */
 	vTaskStartScheduler();
