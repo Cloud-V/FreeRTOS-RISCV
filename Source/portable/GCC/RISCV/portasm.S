@@ -131,22 +131,102 @@ _tn_arch_timer_vector:
     
 /** .section .extern_int_vector: **/
 _tn_arch_extern_int_vector:
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    uret
+    j execute_external_isr
+    j execute_external_isr
+    j execute_external_isr
+    j execute_external_isr
+    j execute_external_isr
+    j execute_external_isr
+    j execute_external_isr
+    j execute_external_isr
+    j execute_external_isr
+    j execute_external_isr
+    j execute_external_isr
+    j execute_external_isr
+    j execute_external_isr
+    j execute_external_isr
+    j execute_external_isr
+    j execute_external_isr
+
+
+execute_external_isr:
+    addi sp, sp, -context_size
+
+    #store all general purpose registers to the stack
+    sw x1, 0(sp)
+    sw x3, 8(sp)
+    sw x4, 12(sp)
+    sw x5, 16(sp)
+    sw x6, 20(sp)
+    sw x7, 24(sp)
+    sw x8, 28(sp)
+    sw x9, 32(sp)
+    sw x10, 36(sp)
+    sw x11, 40(sp)
+    sw x12, 44(sp)
+    sw x13, 48(sp)
+    sw x14, 52(sp)
+    sw x15, 56(sp)
+    sw x16, 60(sp)
+    sw x17, 64(sp)
+    sw x18, 68(sp)
+    sw x19, 72(sp)
+    sw x20, 76(sp)
+    sw x21, 80(sp)
+    sw x22, 84(sp)
+    sw x23, 88(sp)
+    sw x24, 92(sp)
+    sw x25, 96(sp)
+    sw x26, 100(sp)
+    sw x27, 104(sp)
+    sw x28, 108(sp)
+    sw x29, 112(sp)
+    sw x30, 116(sp)
+    sw x31, 120(sp)
+
+    /* find isr responsible to handling the interrupt*/
+    csrrw t0, ustatus, x0
+	slli t0, t0, 2		# multiply by 4 to account for ptr size
+    la t1, extern_isr_lookup_table
+    add t1, t1, t0
+    lw t1, 0(t1)
+
+    /* jump to the appropriate isr */
+    jalr t1 
+    
+    /* restore correct context */
+	LOAD	x1, 0x0(sp)
+	LOAD	x4, 3 * REGBYTES(sp)
+	LOAD	x5, 4 * REGBYTES(sp)
+	LOAD	x6, 5 * REGBYTES(sp)
+	LOAD	x7, 6 * REGBYTES(sp)
+	LOAD	x8, 7 * REGBYTES(sp)
+	LOAD	x9, 8 * REGBYTES(sp)
+	LOAD	x10, 9 * REGBYTES(sp)
+	LOAD	x11, 10 * REGBYTES(sp)
+	LOAD	x12, 11 * REGBYTES(sp)
+	LOAD	x13, 12 * REGBYTES(sp)
+	LOAD	x14, 13 * REGBYTES(sp)
+	LOAD	x15, 14 * REGBYTES(sp)
+	LOAD	x16, 15 * REGBYTES(sp)
+	LOAD	x17, 16 * REGBYTES(sp)
+	LOAD	x18, 17 * REGBYTES(sp)
+	LOAD	x19, 18 * REGBYTES(sp)
+	LOAD	x20, 19 * REGBYTES(sp)
+	LOAD	x21, 20 * REGBYTES(sp)
+	LOAD	x22, 21 * REGBYTES(sp)
+	LOAD	x23, 22 * REGBYTES(sp)
+	LOAD	x24, 23 * REGBYTES(sp)
+	LOAD	x25, 24 * REGBYTES(sp)
+	LOAD	x26, 25 * REGBYTES(sp)
+	LOAD	x27, 26 * REGBYTES(sp)
+	LOAD	x28, 27 * REGBYTES(sp)
+	LOAD	x29, 28 * REGBYTES(sp)
+	LOAD	x30, 29 * REGBYTES(sp)
+	LOAD	x31, 30 * REGBYTES(sp)
+
+	addi	sp, sp, REGBYTES * 32
+	uret
 
 
 /* Startup code */
