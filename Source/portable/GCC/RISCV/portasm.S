@@ -84,6 +84,12 @@
 #define EPC 65 // program counter used to store pc during interrupt occurs
 #define UIE 0x4 // controls registers responsible for interrupt enable/disable
 
+.equ context_size, 132
+/* registers that gcc does not recognise by name for now */
+.equ uie, 0x4
+.equ ustatus, 0x42
+.equ timer, 0xc01
+
 /* Enable interrupts when returning from the handler */
 #define UIE_ENABLE_ALL 0xFFFF // enables possible interrupts
 
@@ -97,6 +103,7 @@
 .global xExitStack
 .global main
 
+.extern extern_isr_lookup_table
 
 .global _start
 .org 0
