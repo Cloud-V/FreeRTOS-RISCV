@@ -1000,7 +1000,7 @@ void loadExternalInterrupts(char *file)
 		exit(-1);
 	}
 	
-    do{ 
+    do{
 	    int address, interruptNumber;
 		fs>>address>>interruptNumber;
         printf("INPUT: %d\n",address);
