@@ -2,6 +2,13 @@
 
 This is based on https://github.com/illustris/FreeRTOS-RISCV with minor fixes and improvements.
 
+# TODO
+* test external interrupts 
+* Simulator can be found in Demo/riscv-spike
+
+```c++
+freertos_rv32_soft_isr(pointer_to_function, interrupt_number) // macro for interrupt handing, defined in port.c
+```
 
 # Sample code
 

@@ -245,4 +245,4 @@ unsigned int __mulsi3 (unsigned int a, unsigned int b){
 
 void (*extern_isr_lookup_table[16]);
 
-#define tn_rv32_soft_isr(vec, number) extern_isr_lookup_table[number] = vec;  
+#define freertos_rv32_soft_isr(vec, number) extern_isr_lookup_table[number] = vec;  
